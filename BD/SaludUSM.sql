@@ -1,198 +1,196 @@
+-- Adaptado de PostgreSQL (Tarea 1) a MySQL (Tarea 2)
+
 CREATE DATABASE IF NOT EXISTS saludusm;
 USE saludusm;
 
---  TABLAS DE DOMINIO
 CREATE TABLE Prevision (
     id_prevision INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_prevision VARCHAR(50) NOT NULL
+    nombre VARCHAR(50) UNIQUE NOT NULL
 );
 
 CREATE TABLE Estado_Cita (
     id_estado INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_estado VARCHAR(50) NOT NULL
+    nombre VARCHAR(50) UNIQUE NOT NULL
 );
 
 CREATE TABLE Especialidad (
     id_especialidad INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_especialidad VARCHAR(100) NOT NULL
+    nombre VARCHAR(100) UNIQUE NOT NULL
 );
 
--- TABLAS PRINCIPALES
+CREATE TABLE Centro_Medico (
+    id_centro INT AUTO_INCREMENT PRIMARY KEY,
+    codigo_interno VARCHAR(20) UNIQUE NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    comuna VARCHAR(100) NOT NULL,
+    region VARCHAR(100) NOT NULL
+);
+
 CREATE TABLE Paciente (
-    rut_paciente VARCHAR(10) PRIMARY KEY,
-    nombre_paciente VARCHAR(100) NOT NULL,
+    id_paciente INT AUTO_INCREMENT PRIMARY KEY,
+    rut VARCHAR(12) UNIQUE NOT NULL,
+    nombre_completo VARCHAR(150) NOT NULL,
+    fecha_nac DATE NOT NULL,
+    sexo VARCHAR(10) NOT NULL CHECK (sexo IN ('M', 'F', 'Otro')),
     id_prevision INT NOT NULL,
-    telefono VARCHAR(15),
-    fecha_nacimiento DATE,
-    sexo CHAR(1),
-    clave VARCHAR(255) NOT NULL, 
+    telefono VARCHAR(20),
+    comuna VARCHAR(100) NOT NULL,
+    clave VARCHAR(255) NOT NULL DEFAULT '123', -- CAMPO AÑADIDO PARA LOGIN (TAREA 2)
     FOREIGN KEY (id_prevision) REFERENCES Prevision(id_prevision)
 );
 
 CREATE TABLE Medico (
-    rut_medico VARCHAR(10) PRIMARY KEY,
-    nombre_medico VARCHAR(100) NOT NULL,
-    email_medico VARCHAR(100) UNIQUE NOT NULL,
-    clave VARCHAR(255) NOT NULL 
+    id_medico INT AUTO_INCREMENT PRIMARY KEY,
+    rut VARCHAR(12) UNIQUE NOT NULL,
+    nombre_completo VARCHAR(150) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    clave VARCHAR(255) NOT NULL DEFAULT '123' -- CAMPO AÑADIDO PARA LOGIN (TAREA 2)
 );
 
-CREATE TABLE Centro_Medico (
-    codigo_centro INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_centro VARCHAR(100) NOT NULL,
-    comuna VARCHAR(50) NOT NULL,
-    region VARCHAR(50) NOT NULL
-);
-
--- RELACIONES MUCHOS A MUCHOS
 CREATE TABLE Medico_Especialidad (
-    rut_medico VARCHAR(10),
-    id_especialidad INT,
-    PRIMARY KEY (rut_medico, id_especialidad),
-    FOREIGN KEY (rut_medico) REFERENCES Medico(rut_medico) ON DELETE CASCADE,
+    id_medico INT NOT NULL,
+    id_especialidad INT NOT NULL,
+    PRIMARY KEY (id_medico, id_especialidad),
+    FOREIGN KEY (id_medico) REFERENCES Medico(id_medico) ON DELETE CASCADE,
     FOREIGN KEY (id_especialidad) REFERENCES Especialidad(id_especialidad) ON DELETE CASCADE
 );
 
 CREATE TABLE Medico_Centro (
-    rut_medico VARCHAR(10),
-    codigo_centro INT,
-    PRIMARY KEY (rut_medico, codigo_centro),
-    FOREIGN KEY (rut_medico) REFERENCES Medico(rut_medico) ON DELETE CASCADE,
-    FOREIGN KEY (codigo_centro) REFERENCES Centro_Medico(codigo_centro) ON DELETE CASCADE
+    id_medico INT NOT NULL,
+    id_centro INT NOT NULL,
+    PRIMARY KEY (id_medico, id_centro),
+    FOREIGN KEY (id_medico) REFERENCES Medico(id_medico) ON DELETE CASCADE,
+    FOREIGN KEY (id_centro) REFERENCES Centro_Medico(id_centro) ON DELETE CASCADE
 );
 
---  TABLAS DE TRANSACCIÓN (Citas y Atenciones)
 CREATE TABLE Cita (
-    n_cita INT AUTO_INCREMENT PRIMARY KEY,
-    fecha_cita DATE NOT NULL,
-    hora_cita TIME NOT NULL,
-    id_estado INT NOT NULL,
-    rut_paciente VARCHAR(10) NOT NULL,
-    rut_medico VARCHAR(10) NOT NULL,
-    codigo_centro INT NOT NULL,
+    id_cita INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_hora DATETIME NOT NULL,
+    id_paciente INT NOT NULL,
+    id_medico INT NOT NULL,
+    id_centro INT NOT NULL,
     id_especialidad INT NOT NULL,
+    id_estado INT NOT NULL,
+    FOREIGN KEY (id_paciente) REFERENCES Paciente(id_paciente),
+    FOREIGN KEY (id_medico) REFERENCES Medico(id_medico),
+    FOREIGN KEY (id_centro) REFERENCES Centro_Medico(id_centro),
+    FOREIGN KEY (id_especialidad) REFERENCES Especialidad(id_especialidad),
     FOREIGN KEY (id_estado) REFERENCES Estado_Cita(id_estado),
-    FOREIGN KEY (rut_paciente) REFERENCES Paciente(rut_paciente) ON DELETE CASCADE,
-    FOREIGN KEY (rut_medico) REFERENCES Medico(rut_medico),
-    FOREIGN KEY (codigo_centro) REFERENCES Centro_Medico(codigo_centro),
-    FOREIGN KEY (id_especialidad) REFERENCES Especialidad(id_especialidad)
-);
-
-CREATE TABLE Atencion (
-    n_atencion INT AUTO_INCREMENT PRIMARY KEY,
-    n_cita INT NOT NULL UNIQUE,
-    motivo_consulta TEXT NOT NULL,
-    observaciones TEXT,
-    FOREIGN KEY (n_cita) REFERENCES Cita(n_cita)
+    CONSTRAINT uq_medico_centro_fecha UNIQUE (id_medico, id_centro, fecha_hora),
+    CONSTRAINT uq_paciente_fecha UNIQUE (id_paciente, fecha_hora)
 );
 
 CREATE TABLE Diagnostico (
-    codigo_cie10 VARCHAR(10) PRIMARY KEY,
-    descripcion_cie10 TEXT NOT NULL
+    codigo_cie VARCHAR(10) PRIMARY KEY,
+    descripcion VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Atencion (
+    id_cita INT PRIMARY KEY,
+    motivo_consulta TEXT NOT NULL,
+    observaciones TEXT NOT NULL,
+    FOREIGN KEY (id_cita) REFERENCES Cita(id_cita) ON DELETE CASCADE
 );
 
 CREATE TABLE Atencion_Diagnostico (
-    n_atencion INT,
-    codigo_cie10 VARCHAR(10),
-    PRIMARY KEY (n_atencion, codigo_cie10),
-    FOREIGN KEY (n_atencion) REFERENCES Atencion(n_atencion) ON DELETE CASCADE,
-    FOREIGN KEY (codigo_cie10) REFERENCES Diagnostico(codigo_cie10)
+    id_cita INT NOT NULL,
+    codigo_cie VARCHAR(10) NOT NULL,
+    PRIMARY KEY (id_cita, codigo_cie),
+    FOREIGN KEY (id_cita) REFERENCES Atencion(id_cita) ON DELETE CASCADE,
+    FOREIGN KEY (codigo_cie) REFERENCES Diagnostico(codigo_cie) ON DELETE CASCADE
 );
 
 CREATE TABLE Receta (
     id_receta INT AUTO_INCREMENT PRIMARY KEY,
-    n_atencion INT NOT NULL,
-    medicamento VARCHAR(100) NOT NULL,
-    dosis VARCHAR(50) NOT NULL,
-    dias_tratamiento INT NOT NULL,
-    FOREIGN KEY (n_atencion) REFERENCES Atencion(n_atencion) ON DELETE CASCADE
+    id_cita INT NOT NULL,
+    medicamento VARCHAR(150) NOT NULL,
+    dosis VARCHAR(150) NOT NULL,
+    dias_tratamiento INT NOT NULL CHECK (dias_tratamiento > 0),
+    FOREIGN KEY (id_cita) REFERENCES Atencion(id_cita) ON DELETE CASCADE
 );
 
--- REQUISITOS OBLIGATORIOS (VIEW, FUNCTION, TRIGGER, PROCEDURE)
+--  (VIEW, FUNCTION, TRIGGER, PROCEDURE)
 
---  VIEW: PANEL ADMINISTRADOR 
+-- VIEW: Panel_Gestion (Administrador)
 CREATE VIEW Vista_Panel_Gestion AS
 SELECT 
-    cm.nombre_centro,
-    COUNT(c.n_cita) AS total_citas,
-    ROUND((SUM(CASE WHEN ec.nombre_estado = 'No Asistió' THEN 1 ELSE 0 END) / COUNT(c.n_cita)) * 100, 2) AS porcentaje_inasistencia
+    cm.nombre AS nombre_centro,
+    COUNT(c.id_cita) AS total_citas,
+    ROUND(IFNULL((SUM(CASE WHEN ec.nombre = 'No Asistió' THEN 1 ELSE 0 END) / COUNT(c.id_cita)) * 100, 0), 2) AS porcentaje_inasistencia
 FROM Centro_Medico cm
-LEFT JOIN Cita c ON cm.codigo_centro = c.codigo_centro
+LEFT JOIN Cita c ON cm.id_centro = c.id_centro
 LEFT JOIN Estado_Cita ec ON c.id_estado = ec.id_estado
-GROUP BY cm.nombre_centro;
+GROUP BY cm.nombre;
 
--- FUNCTION SQL, COMPRUEBA TOPE DE HORARIO
+-- FUNCTION SQL: Verificar tope de horario
 DELIMITER //
-CREATE FUNCTION FN_Tope_Horario(p_fecha DATE, p_hora TIME, p_rut_paciente VARCHAR(10), p_rut_medico VARCHAR(10)) 
+CREATE FUNCTION FN_Tope_Horario(p_fecha_hora DATETIME, p_id_paciente INT, p_id_medico INT) 
 RETURNS BOOLEAN
 DETERMINISTIC
 BEGIN
     DECLARE v_existe INT;
-    -- Revisa si el paciente o el médico ya tienen cita a esa hora y día
     SELECT COUNT(*) INTO v_existe 
     FROM Cita 
-    WHERE fecha_cita = p_fecha 
-    AND hora_cita = p_hora 
-    AND (rut_paciente = p_rut_paciente OR rut_medico = p_rut_medico)
-    AND id_estado IN (1, 2); --1 Reservada, 2: Confirmada
+    WHERE fecha_hora = p_fecha_hora 
+    AND (id_paciente = p_id_paciente OR id_medico = p_id_medico)
+    AND id_estado IN (1, 2); 
     
     RETURN v_existe > 0;
 END //
 DELIMITER ;
 
---PACIENTE INACTIVO TRIGGER
+-- TRIGGER: Validar fecha al agendar
 DELIMITER //
-CREATE TRIGGER TR_Validar_Paciente_Activo
+CREATE TRIGGER TR_Validar_Fecha_Cita
 BEFORE INSERT ON Cita
 FOR EACH ROW
 BEGIN
-    DECLARE v_count INT;
-    SELECT COUNT(*) INTO v_count FROM Paciente WHERE rut_paciente = NEW.rut_paciente;
-    IF v_count = 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: El paciente no existe o eliminó su cuenta.';
+    IF NEW.fecha_hora < NOW() THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: No se puede agendar una cita en el pasado.';
     END IF;
 END //
 DELIMITER ;
 
---AGENGAR CITA
+--  PROCEDIMIENTO ALMACENADO: Agendar Cita
 DELIMITER //
 CREATE PROCEDURE SP_Agendar_Cita(
-    IN p_fecha DATE,
-    IN p_hora TIME,
-    IN p_rut_paciente VARCHAR(10),
-    IN p_rut_medico VARCHAR(10),
-    IN p_centro INT,
-    IN p_especialidad INT
+    IN p_fecha_hora DATETIME,
+    IN p_id_paciente INT,
+    IN p_id_medico INT,
+    IN p_id_centro INT,
+    IN p_id_especialidad INT
 )
 BEGIN
-    
-    IF FN_Tope_Horario(p_fecha, p_hora, p_rut_paciente, p_rut_medico) THEN
+    IF FN_Tope_Horario(p_fecha_hora, p_id_paciente, p_id_medico) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Existe tope de horario para el paciente o médico.';
     ELSE
-        INSERT INTO Cita (fecha_cita, hora_cita, id_estado, rut_paciente, rut_medico, codigo_centro, id_especialidad)
-        VALUES (p_fecha, p_hora, 1, p_rut_paciente, p_rut_medico, p_centro, p_especialidad); -- 1: Reservada
+        INSERT INTO Cita (fecha_hora, id_paciente, id_medico, id_centro, id_especialidad, id_estado)
+        VALUES (p_fecha_hora, p_id_paciente, p_id_medico, p_id_centro, p_id_especialidad, 1);
     END IF;
 END //
 DELIMITER ;
 
-**DATOS REQUERIDOS**
+-- DATOS DE PRUEBA 
 
-INSERT INTO Prevision (nombre_prevision) VALUES ('Fonasa'), ('Isapre'), ('Particular');
-INSERT INTO Estado_Cita (nombre_estado) VALUES ('Reservada'), ('Confirmada'), ('Atendida'), ('No Asistió'), ('Cancelada');
-INSERT INTO Especialidad (nombre_especialidad) VALUES ('Medicina General'), ('Cardiología'), ('Pediatría');
+INSERT INTO Prevision (nombre) VALUES ('Fonasa'), ('Isapre'), ('Particular');
+INSERT INTO Estado_Cita (nombre) VALUES ('Reservada'), ('Confirmada'), ('Atendida'), ('No Asistió'), ('Cancelada');
+INSERT INTO Especialidad (nombre) VALUES ('Medicina General'), ('Pediatría'), ('Cardiología'), ('Traumatología');
 
-INSERT INTO Centro_Medico (nombre_centro, comuna, region) VALUES ('Centro Médico USM', 'Valparaíso', 'Valparaíso'), ('Clínica Viña', 'Viña del Mar', 'Valparaíso');
+INSERT INTO Centro_Medico (codigo_interno, nombre, comuna, region) VALUES
+('CM-VALP-01', 'Centro Médico USM Valparaíso', 'Valparaíso', 'Valparaíso'),
+('CM-VINA-02', 'Clínica USM Viña del Mar', 'Viña del Mar', 'Valparaíso');
 
--- Claves de prueba  (123)
-INSERT INTO Paciente (rut_paciente, nombre_paciente, id_prevision, telefono, fecha_nacimiento, sexo, clave) 
-VALUES ('11111111-1', 'Juan Perez', 1, '912345678', '1990-01-01', 'M', '123');
+INSERT INTO Medico (rut, nombre_completo, email, clave) VALUES
+('11111111-1', 'Dr. Carlos Mendoza Silva', 'carlos.mendoza@saludusm.cl', '123'),
+('22222222-2', 'Dra. Ana Valenzuela Soto', 'ana.valenzuela@saludusm.cl', '123');
 
-INSERT INTO Medico (rut_medico, nombre_medico, email_medico, clave) 
-VALUES ('22222222-2', 'Dra. Ana Gomez', 'ana.gomez@saludusm.cl', '123');
+INSERT INTO Medico_Especialidad (id_medico, id_especialidad) VALUES (1, 1), (1, 3), (2, 2);
+INSERT INTO Medico_Centro (id_medico, id_centro) VALUES (1, 1), (1, 2), (2, 1);
 
-INSERT INTO Medico_Especialidad (rut_medico, id_especialidad) VALUES ('22222222-2', 1), ('22222222-2', 2);
-INSERT INTO Medico_Centro (rut_medico, codigo_centro) VALUES ('22222222-2', 1), ('22222222-2', 2);
+INSERT INTO Paciente (rut, nombre_completo, fecha_nac, sexo, id_prevision, telefono, comuna, clave) VALUES
+('17000001-1', 'Matías Tapia', '1995-04-12', 'M', 2, '+56911112222', 'Valparaíso', '123'),
+('17000002-2', 'Camila Rojas', '1982-11-23', 'F', 2, '+56911112223', 'Viña del Mar', '123');
 
--- Más de 5 diagnósticos para probar el top 5 del panel de gestión
-INSERT INTO Diagnostico (codigo_cie10, descripcion_cie10) VALUES 
-('J00', 'Resfriado común'), ('I10', 'Hipertensión esencial'), ('E11', 'Diabetes mellitus tipo 2'), 
-('J45', 'Asma'), ('K21', 'Reflujo gastroesofágico'), ('M54', 'Dorsalgia');
+INSERT INTO Diagnostico (codigo_cie, descripcion) VALUES
+('J00', 'Rinofaringitis aguda (resfriado común)'), ('I10', 'Hipertensión esencial (primaria)'),
+('E11', 'Diabetes mellitus tipo 2'), ('M54', 'Dorsalgia / Lumbalgia'), ('L20', 'Dermatitis atópica'), ('J06', 'Infección respiratoria aguda de vías superiores');
