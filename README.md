@@ -12,8 +12,8 @@
 
 # Usuarios de Prueba
 *   **Administrador:** RUT: `admin` | Contraseña: `admin123`
-*   **Médico (Multicentro/Multiespecialidad):** RUT: `[RUT_MEDICO_PRUEBA]` | Contraseña: `[CONTRASEÑA]`
-*   **Paciente:** RUT: `[RUT_PACIENTE_PRUEBA]` | Contraseña: `[CONTRASEÑA]`
+*   **Médico (Multicentro/Multiespecialidad):** RUT: `11111111-1` | Contraseña: `123`
+*   **Paciente:** RUT: `17000001-1` | Contraseña: `123`
 
 # Supuestos Asumidos
 1. **Horarios y Bloques:** Se asume que el horario de atención es de 08:00 a 18:00 horas, con bloques de atención de exactamente 30 minutos de duración.
