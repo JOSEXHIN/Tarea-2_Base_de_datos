@@ -2,7 +2,7 @@
 session_start();
 require 'conexion.php';
 
-// Validar rol de Médico
+
 if (!isset($_SESSION['rol']) || $_SESSION['rol'] != 2) { 
     header("Location: index.php"); 
     exit(); 
@@ -31,24 +31,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         $pdo->beginTransaction();
 
-        // Actualizar el estado de la cita
+       
         $stmt = $pdo->prepare("UPDATE Cita SET id_estado = ? WHERE id_cita = ? AND id_medico = ?");
         $stmt->execute([$estado_cita, $id_cita, $id_medico]);
 
-        //Si el estado es Atendida, se inserta la ficha
+        
         if ($estado_cita == 3) { 
-            // Insertar Atención
+            
             $stmtAtencion = $pdo->prepare("INSERT INTO Atencion (id_cita, motivo_consulta, observaciones) VALUES (?, ?, ?)");
             $stmtAtencion->execute([$id_cita, $motivo, $observaciones]);
             $id_atencion = $pdo->lastInsertId();
 
-            // Insertar Diagnóstico CIE-10
+            
             if (!empty($cie10_codigo) && !empty($cie10_desc)) {
                 $stmtDiag = $pdo->prepare("INSERT INTO Diagnostico (id_atencion, codigo_cie10, descripcion) VALUES (?, ?, ?)");
                 $stmtDiag->execute([$id_atencion, $cie10_codigo, $cie10_desc]);
             }
 
-            // Insertar Receta
+            
             if (!empty($medicamento)) {
                 $stmtReceta = $pdo->prepare("INSERT INTO Receta (id_atencion, medicamento, dosis, dias_tratamiento) VALUES (?, ?, ?, ?)");
                 $stmtReceta->execute([$id_atencion, $medicamento, $dosis, $dias]);
