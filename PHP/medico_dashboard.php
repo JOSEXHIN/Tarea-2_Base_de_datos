@@ -2,7 +2,7 @@
 session_start();
 require 'conexion.php';
 
-// Validar que el usuario sea un Médico
+
 if (!isset($_SESSION['rol']) || $_SESSION['rol'] != 2) { 
     header("Location: index.php"); 
     exit(); 
@@ -10,7 +10,7 @@ if (!isset($_SESSION['rol']) || $_SESSION['rol'] != 2) {
 
 $id_medico = $_SESSION['usuario_id'];
 
-// Consulta para obtener la agenda diaria del médico
+
 $stmt = $pdo->prepare("
     SELECT c.id_cita, c.fecha_hora, p.nombre_completo AS paciente, p.id_prevision, cm.nombre AS centro, ec.nombre AS estado
     FROM Cita c
